@@ -138,8 +138,8 @@ if is_training:
     elif FLAGS.input_type == "pointcloud" or FLAGS.input_type == "noisypc":
         dataset_train = datasetpc.ABC_pointcloud_hdf5(FLAGS.data_dir, FLAGS.point_num, FLAGS.grid_size, KNN_num, pooling_radius, FLAGS.input_type, train=True, out_bool=net_bool, out_float=net_float)
         dataset_test = datasetpc.ABC_pointcloud_hdf5(FLAGS.data_dir, FLAGS.point_num, FLAGS.grid_size, KNN_num, pooling_radius, FLAGS.input_type, train=False, out_bool=True, out_float=True)
-    dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=1, shuffle=True, num_workers=16, worker_init_fn=worker_init_fn) #batch_size must be 1
-    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=16)  #batch_size must be 1
+    dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=1, shuffle=True, num_workers=0, worker_init_fn=worker_init_fn) #batch_size must be 1
+    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)  #batch_size must be 1
 
 
     if net_bool:
@@ -363,7 +363,6 @@ if is_training:
 
 
 elif is_testing:
-    import cutils
 
     #Create test dataset
     if FLAGS.input_type == "sdf" or FLAGS.input_type == "voxel" or FLAGS.input_type == "udf":
@@ -480,27 +479,26 @@ elif is_testing:
 
         pred_output_float_numpy = np.clip(pred_output_float_numpy,0,1)
         if FLAGS.method == "undc":
-            #vertices, triangles = utils.dual_contouring_undc_test(pred_output_bool_numpy, pred_output_float_numpy)
-            vertices, triangles = cutils.dual_contouring_undc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
+            vertices, triangles = utils.dual_contouring_undc_test(pred_output_bool_numpy, pred_output_float_numpy)
+            #vertices, triangles = cutils.dual_contouring_undc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
         else:
-            #vertices, triangles = utils.dual_contouring_ndc_test(pred_output_bool_numpy, pred_output_float_numpy)
-            vertices, triangles = cutils.dual_contouring_ndc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
+            vertices, triangles = utils.dual_contouring_ndc_test(pred_output_bool_numpy, pred_output_float_numpy)
+            #vertices, triangles = cutils.dual_contouring_ndc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
         utils.write_obj_triangle(FLAGS.sample_dir+"/test_"+str(i)+".obj", vertices, triangles)
 
         #if i>=32: break
 
 
 elif quick_testing:
-    import cutils
 
 
     #load weights
     print('loading net...')
     if net_bool and (FLAGS.method == "undc" or FLAGS.input_type != "sdf"):
-        network_bool.load_state_dict(torch.load(FLAGS.checkpoint_dir+"/weights_"+FLAGS.method+"_"+FLAGS.input_type+"_bool.pth"))
+        network_bool.load_state_dict(torch.load(FLAGS.checkpoint_dir+"/weights_"+FLAGS.method+"_"+FLAGS.input_type+"_bool.pth", map_location=torch.device('cpu')))
         print('network_bool weights loaded')
     if net_float:
-        network_float.load_state_dict(torch.load(FLAGS.checkpoint_dir+"/weights_"+FLAGS.method+"_"+FLAGS.input_type+"_float.pth"))
+        network_float.load_state_dict(torch.load(FLAGS.checkpoint_dir+"/weights_"+FLAGS.method+"_"+FLAGS.input_type+"_float.pth", map_location=torch.device('cpu')))
         print('network_float weights loaded')
     print('loading net... complete')
 
@@ -514,7 +512,7 @@ elif quick_testing:
     if FLAGS.input_type == "sdf" or FLAGS.input_type == "voxel" or FLAGS.input_type == "udf":
         #Create test dataset
         dataset_test = dataset.single_shape_grid(FLAGS.test_input, receptive_padding, FLAGS.input_type, is_undc=(FLAGS.method == "undc"))
-        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=1)  #batch_size must be 1
+        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)  #batch_size must be 1
 
         for i, data in enumerate(dataloader_test, 0):
 
@@ -566,7 +564,7 @@ elif quick_testing:
     elif FLAGS.input_type == "pointcloud":
         #Create test dataset
         dataset_test = datasetpc.single_shape_pointcloud(FLAGS.test_input, FLAGS.point_num, FLAGS.grid_size, KNN_num, pooling_radius, normalize=False)
-        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=1)  #batch_size must be 1
+        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)  #batch_size must be 1
 
         for i, data in enumerate(dataloader_test, 0):
 
@@ -656,9 +654,9 @@ elif quick_testing:
 
     pred_output_float_numpy = np.clip(pred_output_float_numpy,0,1)
     if FLAGS.method == "undc":
-        #vertices, triangles = utils.dual_contouring_undc_test(pred_output_bool_numpy, pred_output_float_numpy)
-        vertices, triangles = cutils.dual_contouring_undc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
+        vertices, triangles = utils.dual_contouring_undc_test(pred_output_bool_numpy, pred_output_float_numpy)
+        #vertices, triangles = cutils.dual_contouring_undc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
     else:
-        #vertices, triangles = utils.dual_contouring_ndc_test(pred_output_bool_numpy, pred_output_float_numpy)
-        vertices, triangles = cutils.dual_contouring_ndc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
+        vertices, triangles = utils.dual_contouring_ndc_test(pred_output_bool_numpy, pred_output_float_numpy)
+        #vertices, triangles = cutils.dual_contouring_ndc(np.ascontiguousarray(pred_output_bool_numpy, np.int32), np.ascontiguousarray(pred_output_float_numpy, np.float32))
     utils.write_obj_triangle(FLAGS.sample_dir+"/quicktest_"+FLAGS.method+"_"+FLAGS.input_type+".obj", vertices, triangles)

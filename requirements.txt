@@ -1,0 +1,6 @@
+numpy
+torch
+matplotlib
+h5py
+scikit-learn
+trimesh

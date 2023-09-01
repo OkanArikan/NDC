@@ -1,0 +1,5 @@
+.venv/
+examples/
+samples/
+weights/
+__pycache__
